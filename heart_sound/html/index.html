@@ -1,0 +1,23 @@
+<script>
+	let audioElement = null; // Держим ссылку на текущий элемент audio
+
+	window.addEventListener("message", (e) => {
+		const { filePath, volume, sfx_volume } = e.data;
+
+		if (filePath === 'stop_sound') {
+			// Останавливаем звук, если он воспроизводится
+			if (audioElement !== null) {
+				audioElement.pause();
+				audioElement.currentTime = 0;
+			}
+		} else {
+			if (audioElement !== null) {
+				audioElement.pause();
+				audioElement.currentTime = 0;
+			}
+			audioElement = new Audio(filePath);
+			audioElement.volume = volume * (sfx_volume > 1 ? 1 : sfx_volume);
+			audioElement.play();
+		}
+	});
+</script>
