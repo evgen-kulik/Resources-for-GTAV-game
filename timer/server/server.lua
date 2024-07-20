@@ -1,52 +1,3 @@
--- -- Инициализация QBCore
--- local QBCore = exports['qb-core']:GetCoreObject()
-
--- print('QBCore initialized: ' .. tostring(QBCore ~= nil))
-
--- RegisterNetEvent('hospital:server:HelpRequest')
--- AddEventHandler('hospital:server:HelpRequest', function(coords)
---     local src = source
---     print('Help request received from source: ' .. tostring(src))
-
---     local xPlayer = QBCore.Functions.GetPlayer(src)
---     if xPlayer then
---         print('Player found: ' .. tostring(src))
---         TriggerClientEvent('chat:addMessage', -1, {
---             args = { '[EMS]', 'A player needs help at coordinates: ' .. coords.x .. ', ' .. coords.y .. ', ' .. coords.z }
---         })
---         print('Help request sent to EMS at coordinates: ' .. coords.x .. ', ' .. coords.y .. ', ' .. coords.z)
---     else
---         print('Player not found for source: ' .. tostring(src))
---     end
--- end)
-
--- -- Проверка регистрации игрока в QBCore
--- RegisterNetEvent('QBCore:Server:PlayerLoaded')
--- AddEventHandler('QBCore:Server:PlayerLoaded', function()
---     local src = source
---     print('QBCore:Server:PlayerLoaded event triggered for source: ' .. tostring(src))
---     local xPlayer = QBCore.Functions.GetPlayer(src)
---     if xPlayer then
---         print('Player successfully registered: ' .. tostring(src))
---     else
---         print('Failed to register player: ' .. tostring(src))
---     end
--- end)
-
--- AddEventHandler('playerConnecting', function(name, setKickReason, deferrals)
---     local src = source
---     print('Player connecting: ' .. tostring(src))
--- end)
-
--- AddEventHandler('playerDropped', function(reason)
---     local src = source
---     print('Player dropped: ' .. tostring(src) .. ' Reason: ' .. reason)
--- end)
-
-
-
-
-
 -- Инициализация QBCore
 local QBCore = exports['qb-core']:GetCoreObject()
 
@@ -140,4 +91,3 @@ AddEventHandler('QBCore:Server:OnPlayerLoaded', function()
         print('Player not found in QBCore after loading: ' .. tostring(src))
     end
 end)
-
