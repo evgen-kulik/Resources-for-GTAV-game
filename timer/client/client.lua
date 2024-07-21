@@ -5,6 +5,7 @@ local reviveTimer = reviveTime
 local deathCoords = nil -- Координаты места смерти
 local isHelpCalled = false
 local instructionText = "TO CALL MEDICAL PRESS ~y~H~s~" -- Начальный текст инструкции
+local itemDropChance = Config.ItemDropChance -- Вероятность потери предметов (50% по умолчанию)
 
 -- Обработчик события старта ресурса
 AddEventHandler('onClientResourceStart', function(resourceName)
