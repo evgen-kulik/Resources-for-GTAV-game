@@ -1,5 +1,13 @@
 window.addEventListener('message', function(event) {
-    document.body.style.visibility = 'visible'; // Показываем контент, когда скрипт готов
+    // Показываем контент, когда скрипт готов
+    document.body.style.visibility = 'visible'; 
+    
+    // Проверяем, что данные события имеют свойство action
+    if (!event.data.action) {
+        console.error('[ERROR] Event data does not have an action property');
+        return;
+    }
+
     if (event.data.action === 'showRespawnScreen') {
         document.getElementById('respawn-screen').style.display = 'flex';
     } else if (event.data.action === 'hideRespawnScreen') {

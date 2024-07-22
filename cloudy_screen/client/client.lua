@@ -166,3 +166,11 @@ AddEventHandler('onClientResourceStart', function(resourceName)
         print("Auto spawn disabled on resource start")
     end
 end)
+
+-- Обработчик события окончания таймера
+RegisterNetEvent('timer:finished')
+AddEventHandler('timer:finished', function()
+    print("[Cloudy_screen Resource] Received event 'timer:finished'")
+    timerFinished = true
+    stopUnconsciousEffect()  -- Oстановкa мутного при завершении таймера
+end)
