@@ -1,4 +1,4 @@
-local spawnPos = vector3(686.245, 577.950, 130.461)
+local spawnPos = Config.spawnPos
 local reviveTime = Config.ReviveTime -- Время в секундах до автоматического респавна (по умолчанию 5 минут)
 local timerAfterAmbulanceCall = Config.TimerAfterAmbulanceCall
 local isDead = false

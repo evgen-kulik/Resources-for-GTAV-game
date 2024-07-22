@@ -1,17 +1,14 @@
 window.addEventListener('message', function(event) {
-    // Показываем контент, когда скрипт готов
-    document.body.style.visibility = 'visible'; 
-    
-    // Проверяем, что данные события имеют свойство action
-    if (!event.data.action) {
-        console.error('[ERROR] Event data does not have an action property');
-        return;
-    }
-
     if (event.data.action === 'showRespawnScreen') {
-        document.getElementById('respawn-screen').style.display = 'flex';
+        const respawnScreen = document.getElementById('respawn-screen');
+        respawnScreen.style.opacity = 1; // Сделать экран видимым
+        respawnScreen.style.display = 'flex'; // Показать элемент
     } else if (event.data.action === 'hideRespawnScreen') {
-        document.getElementById('respawn-screen').style.display = 'none';
+        const respawnScreen = document.getElementById('respawn-screen');
+        respawnScreen.style.opacity = 0; // Сделать экран невидимым
+        setTimeout(() => {
+            respawnScreen.style.display = 'none'; // Скрыть элемент после завершения анимации
+        }, 1000); // Задержка равна длительности анимации
     }
 });
 

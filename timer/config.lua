@@ -1,5 +1,5 @@
 Config = {}
 
 Config.ReviveTime = 4 -- Время на реанимацию в секундах
-Config.spawnPos = vector3(686.245, 577.950, 130.461)
+Config.spawnPos = vector4(298.01, -584.46, 43.26, 139.58)
 Config.TimerAfterAmbulanceCall = 8
