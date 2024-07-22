@@ -1,0 +1,36 @@
+/* В style.css */
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: transparent; /* Сделать фон прозрачным */
+    visibility: hidden; /* Скрыть весь контент до выполнения JavaScript */
+}
+
+#respawn-screen {
+    display: none; /* Скрыто по умолчанию */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100vw;
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+#respawn-button {
+    padding: 20px 40px;
+    font-size: 20px;
+    color: white;
+    background-color: #444;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#respawn-button:hover {
+    background-color: #666;
+}
