@@ -91,3 +91,10 @@ AddEventHandler('QBCore:Server:OnPlayerLoaded', function()
         print('Player not found in QBCore after loading: ' .. tostring(src))
     end
 end)
+
+-- Обработчик для остановки звука сердца по окончании таймера
+RegisterNetEvent('timer:finished')
+AddEventHandler('timer:finished', function()
+    print("[Server] Received event 'timer:finished', broadcasting to all clients")
+    TriggerClientEvent('timer:finished', -1)  -- Отправляем всем клиентам
+end)
