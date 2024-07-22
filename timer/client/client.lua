@@ -232,27 +232,27 @@ Citizen.CreateThread(function()
     end
 end)
 
--- Функция для показа черного экрана с кнопкой
-function ShowRespawnScreen()
-    if isDead and reviveTimer <= 0 then
-        TriggerServerEvent('timer:finished')
-        print("[DEBUG] ShowRespawnScreen called, player is dead and revive timer has expired")
-        SetNuiFocus(true, true)
-        SendNUIMessage({
-            action = "showRespawnScreen"
-        })
-    end
-end
+-- -- Функция для показа черного экрана с кнопкой
+-- function ShowRespawnScreen()
+--     if isDead and reviveTimer <= 0 then
+--         TriggerServerEvent('timer:finished')
+--         print("[DEBUG] ShowRespawnScreen called, player is dead and revive timer has expired")
+--         SetNuiFocus(true, true)
+--         SendNUIMessage({
+--             action = "showRespawnScreen"
+--         })
+--     end
+-- end
 
--- Функция для выключения черного экрана
-function HideRespawnScreen()
-    print("[DEBUG] HideRespawnScreen called")
-    SetNuiFocus(false, false)
-    SendNUIMessage({
-        action = "hideRespawnScreen"
-    })
-    print("[DEBUG] NUI Message hideRespawnScreen sent")
-end
+-- -- Функция для выключения черного экрана
+-- function HideRespawnScreen()
+--     print("[DEBUG] HideRespawnScreen called")
+--     SetNuiFocus(false, false)
+--     SendNUIMessage({
+--         action = "hideRespawnScreen"
+--     })
+--     print("[DEBUG] NUI Message hideRespawnScreen sent")
+-- end
 
 -- NUI callback
 RegisterNUICallback('respawn', function(data, cb)
@@ -266,3 +266,42 @@ RegisterNUICallback('respawn', function(data, cb)
         cb('error')
     end
 end)
+
+
+-- -----------
+-- Создаем поток для управления аудиосценой
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(0) -- Проверка на каждом кадре
+
+        if isUnconscious then
+            StartAudioScene("DLC_LAUNCH_BACKGROUND")
+        else
+            StopAudioScene("DLC_LAUNCH_BACKGROUND")
+        end
+    end
+end)
+
+-- Функция для показа черного экрана с кнопкой
+function ShowRespawnScreen()
+    if isDead and reviveTimer <= 0 then
+        TriggerServerEvent('timer:finished')
+        print("[DEBUG] ShowRespawnScreen called, player is dead and revive timer has expired")
+        SetNuiFocus(true, true)
+        SendNUIMessage({
+            action = "showRespawnScreen"
+        })
+        isUnconscious = true -- Включаем глушение звуков
+    end
+end
+
+-- Функция для выключения черного экрана
+function HideRespawnScreen()
+    print("[DEBUG] HideRespawnScreen called")
+    SetNuiFocus(false, false)
+    SendNUIMessage({
+        action = "hideRespawnScreen"
+    })
+    print("[DEBUG] NUI Message hideRespawnScreen sent")
+    isUnconscious = false -- Выключаем глушение звуков
+end
