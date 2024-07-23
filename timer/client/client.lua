@@ -1,5 +1,6 @@
-local spawnPos = vector3(686.245, 577.950, 130.461)
+local spawnPos = Config.spawnPos
 local reviveTime = Config.ReviveTime -- Время в секундах до автоматического респавна (по умолчанию 5 минут)
+local timerAfterAmbulanceCall = Config.TimerAfterAmbulanceCall
 local isDead = false
 local reviveTimer = reviveTime
 local deathCoords = nil -- Координаты места смерти
@@ -32,77 +33,15 @@ AddEventHandler('onClientResourceStart', function(resourceName)
         -- Принудительный респавн игрока
         exports.spawnmanager:forceRespawn()
         print("Force respawn triggered")
+
+        -- Скрываем черный экран при старте ресурса
+        HideRespawnScreen()
     end
 end)
 
-print("Script loaded")
-
--- Обработчик события смерти игрока
-AddEventHandler('baseevents:onPlayerDied', function()
-    isDead = true
-    reviveTimer = reviveTime
-    local playerPed = PlayerPedId()
-    deathCoords = GetEntityCoords(playerPed) -- Сохраняем координаты места смерти
-    print("Player died, revive timer started at coords: ", deathCoords)
-
-    -- Отключаем авто-респавн
-    exports.spawnmanager:setAutoSpawn(false)
-    print("Auto spawn disabled on player death")
-
-    Citizen.CreateThread(function()
-        while isDead and reviveTimer > 0 do
-            Citizen.Wait(1000) -- Проверяем каждую секунду
-            reviveTimer = reviveTimer - 1
-            exports.spawnmanager:setAutoSpawn(false) -- Отключаем авто-респавн на всякий случай
-        end
-
-        if reviveTimer <= 0 and isDead then
-            respawnPlayer(spawnPos) -- Автоматический респавн по истечении таймера на начальной позиции
-        end
-    end)
-
-    Citizen.CreateThread(function()
-        while isDead do
-            Citizen.Wait(0) -- Проверка на каждом кадре
-            DrawTimer(reviveTimer)
-        end
-    end)
-end)
-
--- Обработчик события убийства игрока другим игроком
-AddEventHandler('baseevents:onPlayerKilled', function()
-    isDead = true
-    reviveTimer = reviveTime
-    local playerPed = PlayerPedId()
-    deathCoords = GetEntityCoords(playerPed) -- Сохраняем координаты места смерти
-    print("Player killed, revive timer started at coords: ", deathCoords)
-
-    -- Отключаем авто-респавн
-    exports.spawnmanager:setAutoSpawn(false)
-    print("Auto spawn disabled on player killed")
-
-    Citizen.CreateThread(function()
-        while isDead and reviveTimer > 0 do
-            Citizen.Wait(1000) -- Проверяем каждую секунду
-            reviveTimer = reviveTimer - 1
-            exports.spawnmanager:setAutoSpawn(false) -- Отключаем авто-респавн на всякий случай
-        end
-
-        if reviveTimer <= 0 and isDead then
-            respawnPlayer(spawnPos) -- Автоматический респавн по истечении таймера на начальной позиции
-        end
-    end)
-
-    Citizen.CreateThread(function()
-        while isDead do
-            Citizen.Wait(0) -- Проверка на каждом кадре
-            DrawTimer(reviveTimer)
-        end
-    end)
-end)
-
--- Функция для ручного респавна игрока
+-- Функция респавна игрока
 function respawnPlayer(coords)
+    print("respawnPlayer called with coords: ", coords)
     isDead = false
     local playerPed = PlayerPedId()
     ResurrectPed(playerPed)
@@ -114,6 +53,7 @@ function respawnPlayer(coords)
     instructionText = "TO CALL MEDICAL PRESS ~y~H~s~"
     reviveTimer = Config.ReviveTime
     reviveTime = Config.ReviveTime
+    HideRespawnScreen() -- Скрываем черный экран после респавна
 end
 
 -- Команда для ручного респавна игрока (вводится в чат как /respawn)
@@ -210,9 +150,9 @@ Citizen.CreateThread(function()
         Citizen.Wait(0)
         
         if IsControlJustReleased(1, 74) and isDead and not isHelpCalled then -- 74 - это код клавиши "H"
-            reviveTimer = 360 -- Увеличиваем таймер до 360 секунд
-            reviveTime = 360 -- Устанавливаем новый максимальный таймер
-            print("Revive timer increased to 360 seconds")
+            reviveTimer = timerAfterAmbulanceCall -- Увеличиваем таймер
+            reviveTime = timerAfterAmbulanceCall -- Устанавливаем новый максимальный таймер
+            print("Revive timer increased to " .. timerAfterAmbulanceCall .. "seconds")
             instructionText = "AMBULANCE IS COMING" -- Меняем текст инструкции
             isHelpCalled = true -- Блокируем повторное нажатие клавиши "H"
             TriggerServerEvent('hospital:server:HelpRequest', GetEntityCoords(PlayerPedId())) -- Отправляем координаты места смерти
@@ -220,11 +160,119 @@ Citizen.CreateThread(function()
     end
 end)
 
--- Устанавливаем авто-респавн в false при старте ресурса
-AddEventHandler('onClientResourceStart', function(resourceName)
-    if resourceName == GetCurrentResourceName() then
-        exports.spawnmanager:setAutoSpawn(false)
-        print("Auto spawn disabled on resource start")
+-- Функция для показа черного экрана с кнопкой
+function ShowRespawnScreen()
+    if isDead and reviveTimer <= 0 then
+        TriggerServerEvent('timer:finished')
+        print("[DEBUG] ShowRespawnScreen called, player is dead and revive timer has expired")
+        SetNuiFocus(true, true)
+        SendNUIMessage({
+            action = "showRespawnScreen"
+        })
+        isUnconscious = true -- Включаем глушение звуков
+    end
+end
+
+-- Функция для выключения черного экрана
+function HideRespawnScreen()
+    print("[DEBUG] HideRespawnScreen called")
+    SetNuiFocus(false, false)
+    SendNUIMessage({
+        action = "hideRespawnScreen"
+    })
+    print("[DEBUG] NUI Message hideRespawnScreen sent")
+    isUnconscious = false -- Выключаем глушение звуков
+end
+
+-- NUI callback
+RegisterNUICallback('respawn', function(data, cb)
+    print("[DEBUG] NUI callback 'respawn' called with data:", data)
+    if isDead then -- Проверяем, что игрок мёртв перед респавном
+        print("[DEBUG] Player is dead, proceeding with respawn")
+        respawnPlayer(spawnPos)
+        cb('ok')
+    else
+        print("[DEBUG] Player is not dead, cannot respawn")
+        cb('error')
     end
 end)
 
+-- Создаем поток для управления аудиосценой
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(0) -- Проверка на каждом кадре
+
+        if isUnconscious then
+            StartAudioScene("DLC_LAUNCH_BACKGROUND")
+        else
+            StopAudioScene("DLC_LAUNCH_BACKGROUND")
+        end
+    end
+end)
+
+-- Функция для сброса оружия
+local function DropWeapons()
+    local playerPed = PlayerPedId()
+
+    for _, weapon in ipairs(Config.WeaponList) do
+        if HasPedGotWeapon(playerPed, GetHashKey(weapon), false) then
+            local ammo = GetAmmoInPedWeapon(playerPed, GetHashKey(weapon))
+            RemoveWeaponFromPed(playerPed, GetHashKey(weapon))
+            TriggerServerEvent('player:dropWeapon', weapon, ammo)
+            print(weapon .. " dropped from player's hand with " .. ammo .. " ammo")
+        end
+    end
+end
+
+-- Модифицируем функцию HandlePlayerDeath для сброса оружия и патронов
+local function HandlePlayerDeath()
+    isDead = true
+    reviveTimer = reviveTime
+    local playerPed = PlayerPedId()
+    deathCoords = GetEntityCoords(playerPed) -- Сохраняем координаты места смерти
+    print("Player died or killed, revive timer started at coords: ", deathCoords)
+
+    -- Отключаем авто-респавн
+    exports.spawnmanager:setAutoSpawn(false)
+    print("Auto spawn disabled on player death or kill")
+
+    -- Сбрасываем оружие и патроны
+    DropWeapons()
+
+    Citizen.CreateThread(function()
+        while isDead and reviveTimer > 0 do
+            Citizen.Wait(1000) -- Проверяем каждую секунду
+            reviveTimer = reviveTimer - 1
+            exports.spawnmanager:setAutoSpawn(false) -- Отключаем авто-респавн на всякий случай
+        end
+
+        if reviveTimer <= 0 and isDead then
+            print("Timer finished, triggering event 'timer:finished'")
+            TriggerServerEvent('timer:finished')
+            ShowRespawnScreen()
+        end
+    end)
+
+    Citizen.CreateThread(function()
+        while isDead do
+            Citizen.Wait(0) -- Проверка на каждом кадре
+            DrawTimer(reviveTimer)
+        end
+    end)
+end
+
+-- Обработчик события смерти игрока
+AddEventHandler('baseevents:onPlayerDied', function()
+    HandlePlayerDeath()
+end)
+
+-- Обработчик события убийства игрока другим игроком
+AddEventHandler('baseevents:onPlayerKilled', function()
+    HandlePlayerDeath()
+end)
+
+
+-- Команда для сброса оружия (вводится в чат как /dropweapons)
+RegisterCommand('dropweapons', function()
+    DropWeapons()
+end, false)

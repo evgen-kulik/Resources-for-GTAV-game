@@ -14,6 +14,14 @@ server_scripts {
     'server/server.lua'
 }
 
+files {
+    'html/index.html',
+    'html/style.css',
+    'html/script.js'
+}
+
+ui_page 'html/index.html'
+
 dependencies {
     'spawnmanager',
     'baseevents'

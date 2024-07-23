@@ -1,0 +1,64 @@
+/* В style.css */
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: transparent;
+    /* Сделать фон прозрачным */
+}
+
+#respawn-screen {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100vw;
+    background-color: rgba(0, 0, 0, 1.0);
+    /* Полный черный фон */
+    color: white;
+    font-family: 'Arial', sans-serif;
+    /* Устанавливаем основной шрифт */
+    position: relative;
+    /* Относительное позиционирование для содержимого */
+    opacity: 0;
+    /* Изначально скрываем элемент */
+    transition: opacity 1s ease-in-out;
+    /* Плавное изменение прозрачности */
+}
+
+#respawn-message {
+    font-size: 24px;
+    /* Увеличиваем размер шрифта для лучшей читаемости */
+    font-weight: bold;
+    /* Жирное начертание текста */
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7), 0 0 25px rgba(255, 0, 0, 0.7);
+    /* Добавляем тень и эффект свечения */
+    margin-bottom: 20px;
+    /* Отступ снизу для расстояния до кнопки */
+    text-align: center;
+    /* Центрируем текст */
+}
+
+#respawn-button {
+    padding: 20px 40px;
+    font-size: 20px;
+    color: white;
+    background-color: #444;
+    border: none;
+    border-radius: 5px;
+    /* Скругляем углы кнопки */
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+    /* Плавное изменение цвета и анимация при наведении */
+}
+
+#respawn-button:hover {
+    background-color: #666;
+    transform: scale(1.05);
+    /* Легкое увеличение при наведении */
+}

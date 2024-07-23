@@ -91,3 +91,65 @@ AddEventHandler('QBCore:Server:OnPlayerLoaded', function()
         print('Player not found in QBCore after loading: ' .. tostring(src))
     end
 end)
+
+-- Обработчик для остановки звука сердца по окончании таймера
+RegisterNetEvent('timer:finished')
+AddEventHandler('timer:finished', function()
+    print("[Server] Received event 'timer:finished', broadcasting to all clients")
+    TriggerClientEvent('timer:finished', -1)  -- Отправляем всем клиентам
+end)
+
+-- Функция для удаления оружия и записи изменений в базу данных
+local function DropWeapons(src, weapon, ammo)
+    local xPlayer = QBCore.Functions.GetPlayer(src)
+    
+    if xPlayer then
+        xPlayer.Functions.RemoveItem(weapon, 1)
+        TriggerClientEvent('QBCore:Notify', src, weapon .. ' dropped with ' .. ammo .. ' ammo')
+        print(weapon .. ' dropped for player: ' .. tostring(src) .. ' with ' .. ammo .. ' ammo')
+
+        MySQL.Async.execute('UPDATE player_weapons SET count = count - 1 WHERE citizenid = @citizenid AND weapon = @weapon', {
+            ['@citizenid'] = xPlayer.PlayerData.citizenid,
+            ['@weapon'] = weapon
+        })
+
+        if ammo > 0 then
+            MySQL.Async.execute('UPDATE player_ammo SET count = count - @ammo WHERE citizenid = @citizenid AND weapon = @weapon', {
+                ['@ammo'] = ammo,
+                ['@citizenid'] = xPlayer.PlayerData.citizenid,
+                ['@weapon'] = weapon
+            })
+        end
+    else
+        print('Player not found for source: ' .. tostring(src))
+    end
+end
+
+-- Обработчик события смерти игрока
+RegisterNetEvent('baseevents:onPlayerDied')
+AddEventHandler('baseevents:onPlayerDied', function()
+    local src = source
+    DropWeapons(src)
+end)
+
+-- Обработчик события убийства игрока другим игроком
+RegisterNetEvent('baseevents:onPlayerKilled')
+AddEventHandler('baseevents:onPlayerKilled', function()
+    local src = source
+    DropWeapons(src)
+end)
+
+-- Обработчик события сброса оружия
+RegisterNetEvent('player:dropWeapon')
+AddEventHandler('player:dropWeapon', function(weapon, ammo)
+    local src = source
+    DropWeapons(src, weapon, ammo)
+end)
+
+-- Команда для сброса оружия
+RegisterCommand('dropweapons', function(source, args, rawCommand)
+    local playerPed = PlayerPedId()
+    local weapon = GetSelectedPedWeapon(playerPed)
+    local ammo = GetAmmoInPedWeapon(playerPed, weapon)
+    DropWeapons(source, weapon, ammo)
+end, false)
