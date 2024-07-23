@@ -39,17 +39,23 @@ AddEventHandler('onClientResourceStart', function(resourceName)
     end
 end)
 
--- Обработчик события смерти игрока
-AddEventHandler('baseevents:onPlayerDied', function()
+-- Функция для обработки смерти игрока
+local function HandlePlayerDeath()
     isDead = true
     reviveTimer = reviveTime
     local playerPed = PlayerPedId()
     deathCoords = GetEntityCoords(playerPed) -- Сохраняем координаты места смерти
-    print("Player died, revive timer started at coords: ", deathCoords)
+    print("Player died or killed, revive timer started at coords: ", deathCoords)
 
     -- Отключаем авто-респавн
     exports.spawnmanager:setAutoSpawn(false)
-    print("Auto spawn disabled on player death")
+    print("Auto spawn disabled on player death or kill")
+
+    -- Сбрасываем нож, если он в руке
+    local weaponHash = GetSelectedPedWeapon(playerPed)
+    if weaponHash == GetHashKey('WEAPON_KNIFE') then
+        TriggerServerEvent('qbcore:removeWeapon', 'WEAPON_KNIFE')
+    end
 
     Citizen.CreateThread(function()
         while isDead and reviveTimer > 0 do
@@ -59,10 +65,9 @@ AddEventHandler('baseevents:onPlayerDied', function()
         end
 
         if reviveTimer <= 0 and isDead then
-            -- Логирование события окончания таймера
             print("Timer finished, triggering event 'timer:finished'")
-            TriggerServerEvent('timer:finished') -- Отправка события об окончании таймера для остановки звука сердца
-            ShowRespawnScreen() -- Показ черного экрана с кнопкой
+            TriggerServerEvent('timer:finished')
+            ShowRespawnScreen()
         end
     end)
 
@@ -72,43 +77,16 @@ AddEventHandler('baseevents:onPlayerDied', function()
             DrawTimer(reviveTimer)
         end
     end)
+end
+
+-- Обработчик события смерти игрока
+AddEventHandler('baseevents:onPlayerDied', function()
+    HandlePlayerDeath()
 end)
 
 -- Обработчик события убийства игрока другим игроком
 AddEventHandler('baseevents:onPlayerKilled', function()
-    isDead = true
-    reviveTimer = reviveTime
-    local playerPed = PlayerPedId()
-    deathCoords = GetEntityCoords(playerPed) -- Сохраняем координаты места смерти
-    print("Player killed, revive timer started at coords: ", deathCoords)
-
-    -- Отключаем авто-респавн
-    exports.spawnmanager:setAutoSpawn(false)
-    print("Auto spawn disabled on player killed")
-
-    Citizen.CreateThread(function()
-        while isDead and reviveTimer > 0 do
-            Citizen.Wait(1000) -- Проверяем каждую секунду
-            reviveTimer = reviveTimer - 1
-            exports.spawnmanager:setAutoSpawn(false) -- Отключаем авто-респавн на всякий случай
-        end
-
-        if reviveTimer <= 0 and isDead then
-            -- Логирование события окончания таймера
-            print("Timer finished, triggering event 'timer:finished'")
-    
-            -- Отправка события об окончании таймера
-            TriggerServerEvent('timer:finished')
-            ShowRespawnScreen() -- Показ черного экрана с кнопкой
-        end
-    end)
-
-    Citizen.CreateThread(function()
-        while isDead do
-            Citizen.Wait(0) -- Проверка на каждом кадре
-            DrawTimer(reviveTimer)
-        end
-    end)
+    HandlePlayerDeath()
 end)
 
 -- Функция респавна игрока
@@ -232,56 +210,6 @@ Citizen.CreateThread(function()
     end
 end)
 
--- -- Функция для показа черного экрана с кнопкой
--- function ShowRespawnScreen()
---     if isDead and reviveTimer <= 0 then
---         TriggerServerEvent('timer:finished')
---         print("[DEBUG] ShowRespawnScreen called, player is dead and revive timer has expired")
---         SetNuiFocus(true, true)
---         SendNUIMessage({
---             action = "showRespawnScreen"
---         })
---     end
--- end
-
--- -- Функция для выключения черного экрана
--- function HideRespawnScreen()
---     print("[DEBUG] HideRespawnScreen called")
---     SetNuiFocus(false, false)
---     SendNUIMessage({
---         action = "hideRespawnScreen"
---     })
---     print("[DEBUG] NUI Message hideRespawnScreen sent")
--- end
-
--- NUI callback
-RegisterNUICallback('respawn', function(data, cb)
-    print("[DEBUG] NUI callback 'respawn' called with data:", data)
-    if isDead then -- Проверяем, что игрок мёртв перед респавном
-        print("[DEBUG] Player is dead, proceeding with respawn")
-        respawnPlayer(spawnPos)
-        cb('ok')
-    else
-        print("[DEBUG] Player is not dead, cannot respawn")
-        cb('error')
-    end
-end)
-
-
--- -----------
--- Создаем поток для управления аудиосценой
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(0) -- Проверка на каждом кадре
-
-        if isUnconscious then
-            StartAudioScene("DLC_LAUNCH_BACKGROUND")
-        else
-            StopAudioScene("DLC_LAUNCH_BACKGROUND")
-        end
-    end
-end)
-
 -- Функция для показа черного экрана с кнопкой
 function ShowRespawnScreen()
     if isDead and reviveTimer <= 0 then
@@ -305,3 +233,58 @@ function HideRespawnScreen()
     print("[DEBUG] NUI Message hideRespawnScreen sent")
     isUnconscious = false -- Выключаем глушение звуков
 end
+
+-- NUI callback
+RegisterNUICallback('respawn', function(data, cb)
+    print("[DEBUG] NUI callback 'respawn' called with data:", data)
+    if isDead then -- Проверяем, что игрок мёртв перед респавном
+        print("[DEBUG] Player is dead, proceeding with respawn")
+        respawnPlayer(spawnPos)
+        cb('ok')
+    else
+        print("[DEBUG] Player is not dead, cannot respawn")
+        cb('error')
+    end
+end)
+
+-- Создаем поток для управления аудиосценой
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(0) -- Проверка на каждом кадре
+
+        if isUnconscious then
+            StartAudioScene("DLC_LAUNCH_BACKGROUND")
+        else
+            StopAudioScene("DLC_LAUNCH_BACKGROUND")
+        end
+    end
+end)
+
+
+
+-- Функция для сброса ножа из руки
+function DropKnife()
+    local playerPed = PlayerPedId()
+    local weaponHash = GetSelectedPedWeapon(playerPed)
+
+    -- Проверка, что у игрока в руках нож
+    if weaponHash == GetHashKey("WEAPON_KNIFE") then
+        -- Удаляем нож из руки
+        RemoveWeaponFromPed(playerPed, weaponHash)
+        print("Knife dropped from player's hand")
+
+        -- Отправка данных на сервер
+        TriggerServerEvent('player:dropWeapon', 'WEAPON_KNIFE')
+        
+        -- Опционально: можно добавить визуальный эффект сброса ножа
+        local playerCoords = GetEntityCoords(playerPed)
+        CreateObject(GetHashKey("prop_w_me_knife_01"), playerCoords.x, playerCoords.y, playerCoords.z, true, true, true)
+    else
+        print("Player does not have a knife in hand")
+    end
+end
+
+-- Команда для сброса ножа (вводится в чат как /dropknife)
+RegisterCommand('dropknife', function()
+    DropKnife()
+end, false)

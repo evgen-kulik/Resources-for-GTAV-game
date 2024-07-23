@@ -98,3 +98,48 @@ AddEventHandler('timer:finished', function()
     print("[Server] Received event 'timer:finished', broadcasting to all clients")
     TriggerClientEvent('timer:finished', -1)  -- Отправляем всем клиентам
 end)
+
+
+
+
+-- Функция для удаления ножа и записи изменений в базу данных
+local function DropKnife(src)
+    local xPlayer = QBCore.Functions.GetPlayer(src)
+    
+    if xPlayer then
+        local weapon = 'WEAPON_KNIFE'
+        local knifeItem = xPlayer.Functions.GetItemByName(weapon)
+
+        if knifeItem then
+            xPlayer.Functions.RemoveItem(weapon, 1)
+            TriggerClientEvent('QBCore:Notify', src, 'Knife dropped')
+            print('Knife dropped for player: ' .. tostring(src))
+
+            MySQL.Async.execute('UPDATE player_weapons SET count = count - 1 WHERE citizenid = @citizenid AND weapon = @weapon', {
+                ['@citizenid'] = xPlayer.PlayerData.citizenid,
+                ['@weapon'] = weapon
+            })
+        end
+    else
+        print('Player not found for source: ' .. tostring(src))
+    end
+end
+
+-- Обработчик события смерти игрока
+RegisterNetEvent('baseevents:onPlayerDied')
+AddEventHandler('baseevents:onPlayerDied', function()
+    local src = source
+    DropKnife(src)
+end)
+
+-- Обработчик события убийства игрока другим игроком
+RegisterNetEvent('baseevents:onPlayerKilled')
+AddEventHandler('baseevents:onPlayerKilled', function()
+    local src = source
+    DropKnife(src)
+end)
+
+-- Команда для сброса ножа
+RegisterCommand('dropknife', function(source, args, rawCommand)
+    DropKnife(source)
+end, false)
